@@ -1,11 +1,6 @@
-import {Component, OnInit} from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-
-interface Todo {
-  completed: boolean;
-  title: string;
-  id?: number;
-}
+import { Component, OnInit } from '@angular/core';
+import { TodosService } from './todos.service';
+import { Todo } from './todos.service';
 
 @Component({
   selector: 'app-root',
@@ -15,14 +10,42 @@ interface Todo {
 export class AppComponent implements OnInit {
 
   public todos: Todo[] = [];
+  public newTitle = '';
+  public loading = false;
 
-  constructor(private http: HttpClient) { }
+  constructor(private todosService: TodosService) { }
 
   ngOnInit() {
-    this.http.get<Todo[]>('https://jsonplaceholder.typicode.com/todos?_limit=2')
+    this.fetchTodos();
+  }
+
+  public addTodo() {
+    if (!this.newTitle.trim()) {
+      return;
+    }
+
+    this.todosService.addTodo({
+      title: this.newTitle,
+      completed: false,
+    }).subscribe((todo) => {
+      this.todos.push(todo);
+      this.newTitle = '';
+    });
+  }
+
+  public fetchTodos() {
+    this.loading = true;
+    this.todosService.fetchTodos()
       .subscribe((todos) => {
-        console.log('Todos: ', todos);
         this.todos = todos;
+        this.loading = false;
+      });
+  }
+
+  public removeTodo(id: number) {
+    this.todosService.removeTodo(id)
+      .subscribe(() => {
+        this.todos = this.todos.filter((todo) => todo.id !== id);
       });
   }
 }
