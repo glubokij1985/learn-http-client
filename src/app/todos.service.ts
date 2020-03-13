@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { delay } from 'rxjs/operators';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { delay, catchError } from 'rxjs/operators';
+import { Observable, throwError } from 'rxjs';
 
 export interface Todo {
     completed: boolean;
@@ -15,16 +15,44 @@ export class TodosService {
     constructor(private http: HttpClient) {}
 
     public addTodo(todo: Todo): Observable<Todo> {
-        return this.http.post<Todo>('https://jsonplaceholder.typicode.com/todos', todo);
+        return this.http.post<Todo>('https://jsonplaceholder.typicode.com/todos', todo, {
+            headers: new HttpHeaders({
+                'MyCustomHeader': Math.random().toString(),
+                'dsdfds': '123',
+            }),
+        });
     }
 
     public fetchTodos(): Observable<Todo[]> {
-        return this.http.get<Todo[]>('https://jsonplaceholder.typicode.com/todos?_limit=2')
-            .pipe(delay(1500));
+        let params = new HttpParams();
+        params = params.append('_limit', '3');
+        params = params.append('something', 'sdfsdfs');
+
+        return this.http.get<Todo[]>('https://jsonplaceholder.typicode.com/todos', {
+            // params: params,
+            params
+        })
+            .pipe(
+                delay(1500),
+                catchError((error) => {
+                    console.log(error.message);
+                    return throwError(error);
+                }),
+            );
     }
 
     public removeTodo(id: number): Observable<void> {
         return this.http.delete<void>(`https://jsonplaceholder.typicode.com/todos/${id}`);
     }
 
+    public completeTodo(id: number): Observable<Todo>{
+        return this.http.put<Todo>(`https://jsonplaceholder.typicode.com/todos/${id}`, {
+            completed: true,
+        }).pipe(
+            catchError((error) => {
+                console.log(error.message);
+                return throwError(error);
+            })
+        );
+    }
 }
